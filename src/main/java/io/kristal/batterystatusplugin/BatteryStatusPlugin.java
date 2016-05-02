@@ -26,6 +26,11 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	// TAG
 	private static final String TAG = BatteryStatusPlugin.class.getSimpleName();
 
+	/***************************************************************************
+	*
+	* CONSTANTS
+	*
+	***************************************************************************/
 	private static final String JSPluginName = "batteryStatus";
 	private static final String JSActionQueryState = "getState";
 	private static final String JSActionQueryLevel = "getLevel";
@@ -41,6 +46,12 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	private static final String STATE_DISCHARGING = "discharging";
 	private static final String STATE_LOW = "low";
 	private static final String STATE_UNKNOWN = "unknown";
+
+	/***************************************************************************
+	*
+	* MEMBERS
+	*
+	***************************************************************************/
 
 	private BatteryStateChangeReceiver batteryStateChangeReceiver;
 	private List<WeakReference<CobaltFragment>> listeningFragments;
@@ -95,6 +106,12 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 			exception.printStackTrace();
 		}
 	}
+
+	/***************************************************************************
+	*
+	* CALLBACKS
+	*
+	***************************************************************************/
 
 	private void sendStateCallback(CobaltPluginWebContainer webContainer, String callback, String state) {
 		CobaltFragment fragment = webContainer.getFragment();
@@ -152,6 +169,12 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 			}
 		}
 	}
+
+	/***************************************************************************
+	*
+	* GETTERS
+	*
+	***************************************************************************/
 
 	private String getState(CobaltPluginWebContainer webContainer) {
 		Activity activity = webContainer.getActivity();
@@ -242,10 +265,25 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 		}
 	}
 
+	/***************************************************************************
+	*
+	* LISTENER CALLBACK
+	*
+	***************************************************************************/
+
 	public void onBatteryStateChanged(Context context) {
 		sendStateChangedCallback(getState(context));
 	}
 
+	/***************************************************************************
+	*
+	* HELPERS
+	*
+	***************************************************************************/
+
+	/**
+	 * Returns true if the {@link List} contains a {@link WeakReference} pointing the {@link T} object
+	 */
 	private static <T> boolean containsReference(List<WeakReference<T>> list, T reference) {
 		for (Iterator<WeakReference<T>> iterator = list.iterator(); iterator.hasNext(); ) {
 			WeakReference<T> ref = iterator.next();
@@ -258,6 +296,9 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 		return false;
 	}
 
+	/**
+	 * Removes {@link WeakReference}s pointing to the {@link T} object from the {@link List}
+	 */
 	private static <T> int removeReference(List<WeakReference<T>> list, T reference) {
 		int removed = 0;
 
