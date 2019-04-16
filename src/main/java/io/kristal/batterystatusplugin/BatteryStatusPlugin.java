@@ -31,7 +31,6 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	* CONSTANTS
 	*
 	***************************************************************************/
-	private static final String JSPluginName = "batteryStatus";
 	private static final String JSActionQueryState = "getState";
 	private static final String JSActionQueryLevel = "getLevel";
 	private static final String JSActionStartStateMonitoring = "startStateMonitoring";
@@ -57,6 +56,7 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	private List<WeakReference<CobaltFragment>> listeningFragments;
 
 	private static BatteryStatusPlugin sInstance;
+	private String mPluginName;
 
 	public static CobaltAbstractPlugin getInstance(CobaltPluginWebContainer webContainer) {
 		if (sInstance == null)
@@ -73,16 +73,24 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 
 	@Override
 	public void onMessage(CobaltPluginWebContainer webContainer, JSONObject message) {
+		String action = null;
 		try {
-			String action = message.getString(Cobalt.kJSAction);
-
+			action = message.getString(Cobalt.kJSAction);
+			mPluginName = message.getString(Cobalt.kJSPluginName);
+		}catch (JSONException exception) {
+			if (Cobalt.DEBUG)
+				Log.d(TAG, "onMessage: action field missing or is not a string or data field is missing or is not an object");
+			exception.printStackTrace();
+			return;
+		}
+		try {
 			switch (action) {
 				case JSActionQueryState:
-					sendStateCallback(webContainer, message.getString(Cobalt.kJSCallback), getState(webContainer));
+					sendStateCallback(webContainer, getState(webContainer));
 					break;
 
 				case JSActionQueryLevel:
-					sendLevelCallback(webContainer, message.getString(Cobalt.kJSCallback), getLevel(webContainer));
+					sendLevelCallback(webContainer, getLevel(webContainer));
 					break;
 
 				case JSActionStartStateMonitoring:
@@ -99,10 +107,7 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 					break;
 			}
 		}
-		catch (JSONException exception) {
-			if (Cobalt.DEBUG)
-				Log.d(TAG, "onMessage: action field missing or is not a string or data field is missing or is not an object");
-
+		catch (Exception exception) {
 			exception.printStackTrace();
 		}
 	}
@@ -113,14 +118,15 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	*
 	***************************************************************************/
 
-	private void sendStateCallback(CobaltPluginWebContainer webContainer, String callback, String state) {
+	private void sendStateCallback(CobaltPluginWebContainer webContainer, String state) {
 		CobaltFragment fragment = webContainer.getFragment();
 
 		if (fragment != null) {
 			try {
 				JSONObject data = new JSONObject();
 				data.put(kJSState, state);
-				fragment.sendCallback(callback, data);
+				data.put(Cobalt.kJSAction, "onState");
+				fragment.sendPlugin(mPluginName, data);
 			}
 			catch (JSONException exception) {
 				exception.printStackTrace();
@@ -128,14 +134,15 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 		}
 	}
 
-	private void sendLevelCallback(CobaltPluginWebContainer webContainer, String callback, String level) {
+	private void sendLevelCallback(CobaltPluginWebContainer webContainer, String level) {
 		CobaltFragment fragment = webContainer.getFragment();
 
 		if (fragment != null) {
 			try {
 				JSONObject data = new JSONObject();
 				data.put(kJSLevel, level);
-				fragment.sendCallback(callback, data);
+				data.put(Cobalt.kJSAction, "onLevel");
+				fragment.sendPlugin(mPluginName, data);
 			}
 			catch (JSONException exception) {
 				exception.printStackTrace();
@@ -148,11 +155,11 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 			try {
 				JSONObject data = new JSONObject();
 				data.put(kJSState, state);
+				data.put(Cobalt.kJSAction, JSActionOnStateChanged);
 
 				JSONObject message = new JSONObject();
 				message.put(Cobalt.kJSType, Cobalt.JSTypePlugin);
-				message.put(Cobalt.kJSPluginName, JSPluginName);
-				message.put(Cobalt.kJSAction, JSActionOnStateChanged);
+				message.put(Cobalt.kJSPluginName, mPluginName);
 				message.put(Cobalt.kJSData, data);
 
 				for (Iterator<WeakReference<CobaltFragment>> iterator = listeningFragments.iterator(); iterator.hasNext(); ) {
