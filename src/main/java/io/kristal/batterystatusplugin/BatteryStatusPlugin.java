@@ -7,6 +7,8 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.cobaltians.cobalt.Cobalt;
@@ -56,59 +58,44 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	private List<WeakReference<CobaltFragment>> listeningFragments;
 
 	private static BatteryStatusPlugin sInstance;
-	private String mPluginName;
 
-	public static CobaltAbstractPlugin getInstance(CobaltPluginWebContainer webContainer) {
+	public static CobaltAbstractPlugin getInstance()
+	{
 		if (sInstance == null)
+		{
 			sInstance = new BatteryStatusPlugin();
-
-		sInstance.addWebContainer(webContainer);
-
+		}
 		return sInstance;
 	}
 
 	private BatteryStatusPlugin() {
 		listeningFragments = new ArrayList<>();
 	}
-
+	
 	@Override
-	public void onMessage(CobaltPluginWebContainer webContainer, JSONObject message) {
-		String action = null;
-		try {
-			action = message.getString(Cobalt.kJSAction);
-			mPluginName = message.getString(Cobalt.kJSPluginName);
-		}catch (JSONException exception) {
-			if (Cobalt.DEBUG)
-				Log.d(TAG, "onMessage: action field missing or is not a string or data field is missing or is not an object");
-			exception.printStackTrace();
-			return;
-		}
-		try {
-			switch (action) {
-				case JSActionQueryState:
-					sendStateCallback(webContainer, getState(webContainer));
-					break;
-
-				case JSActionQueryLevel:
-					sendLevelCallback(webContainer, getLevel(webContainer));
-					break;
-
-				case JSActionStartStateMonitoring:
-					startStateMonitoring(webContainer);
-					break;
-
-				case JSActionStopStateMonitoring:
-					stopStateMonitoring(webContainer);
-					break;
-
-				default:
-					if (Cobalt.DEBUG)
-						Log.d(TAG, "onMessage: unknown action " + action);
-					break;
-			}
-		}
-		catch (Exception exception) {
-			exception.printStackTrace();
+	public void onMessage(@NonNull CobaltPluginWebContainer webContainer, @NonNull String action,
+			@Nullable JSONObject data, @Nullable String callbackChannel)
+	{
+		switch (action)
+		{
+			case JSActionQueryState:
+				sendStateCallback(webContainer, getState(webContainer));
+				break;
+			case JSActionQueryLevel:
+				sendLevelCallback(webContainer, getLevel(webContainer));
+				break;
+			case JSActionStartStateMonitoring:
+				startStateMonitoring(webContainer);
+				break;
+			case JSActionStopStateMonitoring:
+				stopStateMonitoring(webContainer);
+				break;
+			default:
+				if (Cobalt.DEBUG)
+				{
+					Log.d(TAG, "onMessage: unknown action " + action);
+				}
+				break;
 		}
 	}
 
@@ -126,7 +113,8 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 				JSONObject data = new JSONObject();
 				data.put(kJSState, state);
 				data.put(Cobalt.kJSAction, "onState");
-				fragment.sendPlugin(mPluginName, data);
+				// TODO: use PubSub on callbackChannel instead
+				//fragment.sendPlugin(mPluginName, data);
 			}
 			catch (JSONException exception) {
 				exception.printStackTrace();
@@ -142,7 +130,8 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 				JSONObject data = new JSONObject();
 				data.put(kJSLevel, level);
 				data.put(Cobalt.kJSAction, "onLevel");
-				fragment.sendPlugin(mPluginName, data);
+				// TODO: use PubSub on callbackChannel instead
+				//fragment.sendPlugin(mPluginName, data);
 			}
 			catch (JSONException exception) {
 				exception.printStackTrace();
@@ -159,7 +148,8 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 
 				JSONObject message = new JSONObject();
 				message.put(Cobalt.kJSType, Cobalt.JSTypePlugin);
-				message.put(Cobalt.kJSPluginName, mPluginName);
+				//// TODO: name is not available anymore, update implementation
+				//message.put(Cobalt.kJSPluginName, mPluginName);
 				message.put(Cobalt.kJSData, data);
 
 				for (Iterator<WeakReference<CobaltFragment>> iterator = listeningFragments.iterator(); iterator.hasNext(); ) {
