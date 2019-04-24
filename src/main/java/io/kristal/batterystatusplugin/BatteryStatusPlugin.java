@@ -79,10 +79,10 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 		switch (action)
 		{
 			case JSActionQueryState:
-				sendStateCallback(webContainer, getState(webContainer));
+				sendStateCallback(callbackChannel, getState(webContainer));
 				break;
 			case JSActionQueryLevel:
-				sendLevelCallback(webContainer, getLevel(webContainer));
+				sendLevelCallback(callbackChannel, getLevel(webContainer));
 				break;
 			case JSActionStartStateMonitoring:
 				startStateMonitoring(webContainer);
@@ -105,37 +105,26 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 	*
 	***************************************************************************/
 
-	private void sendStateCallback(CobaltPluginWebContainer webContainer, String state) {
-		CobaltFragment fragment = webContainer.getFragment();
-
-		if (fragment != null) {
-			try {
-				JSONObject data = new JSONObject();
-				data.put(kJSState, state);
-				data.put(Cobalt.kJSAction, "onState");
-				// TODO: use PubSub on callbackChannel instead
-				//fragment.sendPlugin(mPluginName, data);
-			}
-			catch (JSONException exception) {
-				exception.printStackTrace();
-			}
+	private void sendStateCallback(String callbackChannel, String state) {
+		try {
+			JSONObject data = new JSONObject();
+			data.put(kJSState, state);
+			Cobalt.publishMessage(data, callbackChannel);
 		}
+		catch (JSONException exception) {
+			exception.printStackTrace();
+		}
+
 	}
 
-	private void sendLevelCallback(CobaltPluginWebContainer webContainer, String level) {
-		CobaltFragment fragment = webContainer.getFragment();
-
-		if (fragment != null) {
-			try {
-				JSONObject data = new JSONObject();
-				data.put(kJSLevel, level);
-				data.put(Cobalt.kJSAction, "onLevel");
-				// TODO: use PubSub on callbackChannel instead
-				//fragment.sendPlugin(mPluginName, data);
-			}
-			catch (JSONException exception) {
-				exception.printStackTrace();
-			}
+	private void sendLevelCallback(String callbackChannel, String level) {
+		try {
+			JSONObject data = new JSONObject();
+			data.put(kJSLevel, level);
+			Cobalt.publishMessage(data, callbackChannel);
+		}
+		catch (JSONException exception) {
+			exception.printStackTrace();
 		}
 	}
 
@@ -144,12 +133,11 @@ public class BatteryStatusPlugin extends CobaltAbstractPlugin implements Battery
 			try {
 				JSONObject data = new JSONObject();
 				data.put(kJSState, state);
-				data.put(Cobalt.kJSAction, JSActionOnStateChanged);
 
 				JSONObject message = new JSONObject();
 				message.put(Cobalt.kJSType, Cobalt.JSTypePlugin);
-				//// TODO: name is not available anymore, update implementation
-				//message.put(Cobalt.kJSPluginName, mPluginName);
+				message.put(Cobalt.kJSPluginName, "CobaltBatteryStatusPlugin");
+				message.put(Cobalt.kJSAction, JSActionOnStateChanged);
 				message.put(Cobalt.kJSData, data);
 
 				for (Iterator<WeakReference<CobaltFragment>> iterator = listeningFragments.iterator(); iterator.hasNext(); ) {
